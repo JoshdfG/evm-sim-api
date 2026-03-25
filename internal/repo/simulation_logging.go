@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/joshdfg/evm-sim-api/internal/entity"
 	"github.com/joshdfg/evm-sim-api/internal/usecase"
+	"github.com/rs/zerolog"
 )
 
 // SimulationLoggingRepo decorates EVMFork with zerolog structured logging.

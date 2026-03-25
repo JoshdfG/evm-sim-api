@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog"
 	"github.com/joshdfg/evm-sim-api/internal/entity"
 	"github.com/joshdfg/evm-sim-api/internal/usecase"
+	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
 )
 
 // SimulationCacheRepo is a Redis caching decorator over EVMFork.

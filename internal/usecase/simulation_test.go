@@ -5,10 +5,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/joshdfg/evm-sim-api/internal/entity"
 	"github.com/joshdfg/evm-sim-api/internal/usecase"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // ── mock EVMFork ──────────────────────────────────────────────────────────────

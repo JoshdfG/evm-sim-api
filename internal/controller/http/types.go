@@ -13,7 +13,7 @@ type SimulateRequest struct {
 	BlockNumber      *uint64                       `json:"block_number,omitempty"`
 	From             string                        `json:"from" binding:"required"`
 	To               string                        `json:"to" binding:"required"`
-	Value            string                        `json:"value,omitempty"`   // decimal wei string
+	Value            string                        `json:"value,omitempty"` // decimal wei string
 	GasLimit         uint64                        `json:"gas_limit,omitempty"`
 	GasPrice         string                        `json:"gas_price,omitempty"` // decimal wei string
 	Data             string                        `json:"data,omitempty"`

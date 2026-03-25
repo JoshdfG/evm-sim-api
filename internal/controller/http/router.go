@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joshdfg/evm-sim-api/internal/usecase"
+	"github.com/rs/zerolog"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/rs/zerolog"
-	"github.com/joshdfg/evm-sim-api/internal/usecase"
 )
 
 // NewRouter wires all routes, middleware, and handlers into a *gin.Engine.
