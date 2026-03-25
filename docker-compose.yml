@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: simapi
+      POSTGRES_PASSWORD: simapi
+      POSTGRES_DB: simapi
+    ports:
+      - "5400:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simapi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6374:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Optional: local Ethereum node ──────────────────────────────────────────
+  # For development, point EVM_ARCHIVE_NODE_URL at Alchemy/Infura instead.
+  # Uncomment below only if you want a fully local setup (~2 TB disk required).
+  #
+  # erigon:
+  #   image: thorax/erigon:latest
+  #   ports:
+  #     - "8545:8545"
+  #   volumes:
+  #     - erigondata:/home/erigon/.local/share/erigon
+  #   command: >
+  #     erigon
+  #     --chain=mainnet
+  #     --http
+  #     --http.addr=0.0.0.0
+  #     --http.api=eth,debug,net,trace
+  #     --prune=htc
+
+volumes:
+  pgdata:
+  redisdata:
+  # erigondata:
