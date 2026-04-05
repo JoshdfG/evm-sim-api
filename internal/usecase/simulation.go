@@ -55,7 +55,7 @@ func (uc *SimulationUseCase) Run(ctx context.Context, req entity.SimulationReque
 		if err != nil {
 			decodedLogs = append(decodedLogs, entity.DecodedLog{
 				EventSig: "DECODE_ERROR",
-				Decoded:  map[string]interface{}{"error": err.Error()},
+				Decoded:  map[string]any{"error": err.Error()},
 			})
 		}
 	} else {
@@ -64,7 +64,7 @@ func (uc *SimulationUseCase) Run(ctx context.Context, req entity.SimulationReque
 		if err != nil {
 			decodedLogs = append(decodedLogs, entity.DecodedLog{
 				EventSig: "DECODE_ERROR",
-				Decoded:  map[string]interface{}{"error": err.Error()},
+				Decoded:  map[string]any{"error": err.Error()},
 			})
 		}
 	}
