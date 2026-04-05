@@ -75,7 +75,7 @@ func (t *CallTracer) TraceCall(
 	}
 
 	// Use hex.EncodeToString for []byte — fmt.Sprintf("0x%x", slice) drops zero-padding.
-	callArg := map[string]interface{}{
+	callArg := map[string]any{
 		"from": msg.From.Hex(),
 		"to":   msg.To.Hex(),
 		"gas":  fmt.Sprintf("0x%x", msg.Gas),
@@ -88,9 +88,9 @@ func (t *CallTracer) TraceCall(
 		callArg["gasPrice"] = fmt.Sprintf("0x%x", msg.GasPrice)
 	}
 
-	tracerOpts := map[string]interface{}{
+	tracerOpts := map[string]any{
 		"tracer":       "callTracer",
-		"tracerConfig": map[string]interface{}{"withLog": true},
+		"tracerConfig": map[string]any{"withLog": true},
 	}
 
 	var raw json.RawMessage

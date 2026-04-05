@@ -93,7 +93,7 @@ func (d *EVMTokenDecoder) Decode(
 			decodedLogs = append(decodedLogs, entity.DecodedLog{
 				Address:  l.Address,
 				EventSig: "Transfer(address,address,uint256)",
-				Decoded:  map[string]interface{}{"from": sender, "to": receiver, "value": amount.String()},
+				Decoded:  map[string]any{"from": sender, "to": receiver, "value": amount.String()},
 				Raw:      l.Topics,
 			})
 			d.log.Debug().Str("token", l.Address).Str("from", sender).Str("to", receiver).Str("amount", amount.String()).Msg("Transfer decoded")
@@ -109,7 +109,7 @@ func (d *EVMTokenDecoder) Decode(
 			decodedLogs = append(decodedLogs, entity.DecodedLog{
 				Address:  l.Address,
 				EventSig: "Approval(address,address,uint256)",
-				Decoded:  map[string]interface{}{"owner": owner, "spender": spender, "value": amount.String()},
+				Decoded:  map[string]any{"owner": owner, "spender": spender, "value": amount.String()},
 				Raw:      l.Topics,
 			})
 			// Surface approval amounts to the risk analyzer.
