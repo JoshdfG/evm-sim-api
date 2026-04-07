@@ -81,7 +81,7 @@ type LogConfig struct {
 // The process exits immediately if any required field is absent.
 func New() (*Config, error) {
 	cfg := &Config{}
-	// ReadConfig falls back to ReadEnv when .env is absent — that is intentional.
+	// ReadConfig falls back to ReadEnv when .env is absent  that is intentional.
 	if err := cleanenv.ReadConfig(".env", cfg); err != nil {
 		if err2 := cleanenv.ReadEnv(cfg); err2 != nil {
 			return nil, fmt.Errorf("config: %w", err2)

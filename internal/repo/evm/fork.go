@@ -19,11 +19,11 @@ import (
 // ArchiveNodeFork implements usecase.EVMFork.
 //
 // Log collection strategy (in priority order):
-//  1. debug_traceCall with callTracer+withLog — full call tree and logs.
+//  1. debug_traceCall with callTracer+withLog  full call tree and logs.
 //     Available on Alchemy Growth+, QuickNode, Infura paid, self-hosted geth.
-//  2. alchemy_simulateAssetChanges — structured asset changes from Alchemy.
+//  2. alchemy_simulateAssetChanges  structured asset changes from Alchemy.
 //     Available on ALL Alchemy plans including free tier.
-//  3. eth_getLogs fallback — reads actual on-chain logs for the block/address.
+//  3. eth_getLogs fallback  reads actual on-chain logs for the block/address.
 //     Only useful when blockNumber is specified (historical simulation).
 type ArchiveNodeFork struct {
 	client  *ethclient.Client
@@ -116,7 +116,7 @@ func (f *ArchiveNodeFork) Simulate(ctx context.Context, req entity.SimulationReq
 	// This is the common case on Alchemy free tier and covers ERC20/native changes.
 	var alchemyChanges []entity.AssetChange
 	if len(traceResult.Logs) == 0 && callErr == nil {
-		f.log.Debug().Msg("no trace logs — trying alchemy_simulateAssetChanges")
+		f.log.Debug().Msg("no trace logs trying alchemy_simulateAssetChanges")
 		if changes, err := f.tracer.AlchemySimulate(ctx, f.client, msg, blockNum); err == nil {
 			alchemyChanges = convertAlchemyChanges(changes)
 			f.log.Debug().Int("change_count", len(alchemyChanges)).Msg("alchemy_simulateAssetChanges succeeded")
@@ -150,38 +150,44 @@ func convertAlchemyChanges(in []alchemyAssetChange) []entity.AssetChange {
 
 		switch strings.ToUpper(c.AssetType) {
 		case "NATIVE":
+			// Sender (Outflow)
 			out = append(out, entity.AssetChange{
 				Type:        entity.AssetChangeNative,
 				Address:     c.From,
-				RawAmount:   new(big.Int).Neg(raw),
-				HumanAmount: "-" + c.Amount,
+				RawAmount:   entity.NewBigIntString(new(big.Int).Neg(raw)),
+				HumanAmount: entity.NormaliseHumanAmount("-" + c.Amount),
 			})
+			// Receiver (Inflow)
 			out = append(out, entity.AssetChange{
 				Type:        entity.AssetChangeNative,
 				Address:     c.To,
-				RawAmount:   raw,
-				HumanAmount: c.Amount,
+				RawAmount:   entity.NewBigIntString(raw),
+				HumanAmount: entity.NormaliseHumanAmount(c.Amount),
 			})
+
 		case "ERC20":
 			decimals := uint8(c.Decimals)
+			// Sender (Outflow)
 			out = append(out, entity.AssetChange{
 				Type:          entity.AssetChangeERC20,
 				Address:       c.From,
 				TokenAddress:  c.ContractAddress,
 				TokenSymbol:   c.Symbol,
 				TokenDecimals: decimals,
-				RawAmount:     new(big.Int).Neg(raw),
-				HumanAmount:   "-" + c.Amount,
+				RawAmount:     entity.NewBigIntString(new(big.Int).Neg(raw)),
+				HumanAmount:   entity.NormaliseHumanAmount("-" + c.Amount),
 			})
+			// Receiver (Inflow)
 			out = append(out, entity.AssetChange{
 				Type:          entity.AssetChangeERC20,
 				Address:       c.To,
 				TokenAddress:  c.ContractAddress,
 				TokenSymbol:   c.Symbol,
 				TokenDecimals: decimals,
-				RawAmount:     raw,
-				HumanAmount:   c.Amount,
+				RawAmount:     entity.NewBigIntString(raw),
+				HumanAmount:   entity.NormaliseHumanAmount(c.Amount),
 			})
+
 		case "ERC721":
 			tokenID := new(big.Int)
 			tokenID.SetString(c.TokenID, 10)
@@ -190,9 +196,9 @@ func convertAlchemyChanges(in []alchemyAssetChange) []entity.AssetChange {
 				Address:      c.To,
 				TokenAddress: c.ContractAddress,
 				TokenSymbol:  c.Symbol,
-				TokenID:      tokenID,
-				RawAmount:    big.NewInt(1),
-				HumanAmount:  "1",
+				TokenID:      &entity.BigIntString{Int: tokenID},
+				RawAmount:    entity.BigIntString{Int: big.NewInt(1)},
+				HumanAmount:  "1.0", // Hardcoded normalized string
 			})
 		}
 	}

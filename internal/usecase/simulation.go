@@ -38,12 +38,12 @@ func (uc *SimulationUseCase) Run(ctx context.Context, req entity.SimulationReque
 	// 2. Resolve asset changes.
 	//
 	// Priority:
-	//   a) AlchemyChanges — pre-parsed by alchemy_simulateAssetChanges (free tier).
+	//   a) AlchemyChanges  pre-parsed by alchemy_simulateAssetChanges (free tier).
 	//      Available even when debug_traceCall logs are empty.
 	//   b) Decode from raw EVM logs (debug_traceCall with withLog:true).
 	//      Available on Alchemy Growth+, QuickNode, self-hosted geth.
 	//
-	// Risk analysis always runs — it operates on whatever changes we have.
+	// Risk analysis always runs it operates on whatever changes we have.
 	var changes []entity.AssetChange
 	var decodedLogs []entity.DecodedLog
 
@@ -87,7 +87,7 @@ func (uc *SimulationUseCase) Run(ctx context.Context, req entity.SimulationReque
 		BlockNumber:  raw.BlockNumber,
 	}
 
-	// 5. Persist fire-and-forget — DB error must never fail the caller.
+	// 5. Persist fire-and-forget DB error must never fail the caller.
 	if saveErr := uc.repo.Save(ctx, req, result); saveErr != nil {
 		_ = saveErr // logged by the repo's logging decorator
 	}

@@ -111,7 +111,7 @@ func TestRiskAnalyzer_UnlimitedApproval(t *testing.T) {
 			Address:      "0xspender",
 			TokenAddress: "0xusdc",
 			TokenSymbol:  "USDC",
-			RawAmount:    maxU256,
+			RawAmount:    entity.BigIntString{Int: maxU256},
 		},
 	}
 
@@ -137,7 +137,7 @@ func TestRiskAnalyzer_HighNativeTransfer(t *testing.T) {
 		{
 			Type:        entity.AssetChangeNative,
 			Address:     "0xsender",
-			RawAmount:   new(big.Int).Neg(twoETH),
+			RawAmount:   entity.BigIntString{Int: new(big.Int).Neg(twoETH)},
 			HumanAmount: "-2.0",
 		},
 	}
@@ -158,7 +158,7 @@ func TestRiskAnalyzer_CleanTxNoFlags(t *testing.T) {
 		{
 			Type:      entity.AssetChangeNative,
 			Address:   "0xsender",
-			RawAmount: big.NewInt(-1000),
+			RawAmount: entity.BigIntString{Int: big.NewInt(-1000)},
 		},
 	}
 

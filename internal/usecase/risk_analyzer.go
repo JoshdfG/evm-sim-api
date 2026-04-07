@@ -47,12 +47,15 @@ func (a *DefaultRiskAnalyzer) checkUnlimitedApprovals(changes []entity.AssetChan
 		if c.Type != entity.AssetChangeERC20 {
 			continue
 		}
-		if c.RawAmount != nil && c.RawAmount.Cmp(maxUint256) == 0 {
+
+		// 1. Structs aren't nil.
+		// 2. Use .Int to access big.Int methods.
+		if c.RawAmount.Int != nil && c.RawAmount.Cmp(maxUint256) == 0 {
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskUnlimitedApproval,
 				Severity: entity.SeverityCritical,
 				Message:  fmt.Sprintf("Unlimited ERC20 approval granted to %s for token %s", c.Address, c.TokenAddress),
-				Context: map[string]interface{}{
+				Context: map[string]any{
 					"spender":       c.Address,
 					"token_address": c.TokenAddress,
 					"token_symbol":  c.TokenSymbol,
@@ -74,8 +77,8 @@ func (a *DefaultRiskAnalyzer) checkNFTApprovals(logs []RawLog) []entity.RiskFlag
 				flags = append(flags, entity.RiskFlag{
 					Code:     entity.RiskSetApprovalForAll,
 					Severity: entity.SeverityCritical,
-					Message:  fmt.Sprintf("setApprovalForAll detected on %s — grants operator full NFT control", l.Address),
-					Context:  map[string]interface{}{"contract": l.Address},
+					Message:  fmt.Sprintf("setApprovalForAll detected on %s  grants operator full NFT control", l.Address),
+					Context:  map[string]any{"contract": l.Address},
 				})
 			}
 		}
@@ -95,16 +98,19 @@ func (a *DefaultRiskAnalyzer) checkHighNativeTransfer(
 		if !strings.EqualFold(c.Address, req.From) {
 			continue
 		}
-		if c.RawAmount == nil {
+		// c.RawAmount is a struct, so check the internal pointer
+		if c.RawAmount.Int == nil {
 			continue
 		}
-		abs := new(big.Int).Abs(c.RawAmount)
+
+		// Access the underlying *big.Int using .Int
+		abs := new(big.Int).Abs(c.RawAmount.Int)
 		if abs.Cmp(a.highNativeThresholdWei) >= 0 {
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskHighNativeTransfer,
 				Severity: entity.SeverityWarning,
-				Message:  fmt.Sprintf("Transaction sends %s native tokens — verify recipient carefully", c.HumanAmount),
-				Context:  map[string]interface{}{"amount_human": c.HumanAmount, "to": req.To},
+				Message:  fmt.Sprintf("Transaction sends %s native tokens  verify recipient carefully", c.HumanAmount),
+				Context:  map[string]any{"amount_human": c.HumanAmount, "to": req.To},
 			})
 		}
 	}
@@ -118,8 +124,8 @@ func (a *DefaultRiskAnalyzer) checkDelegatecall(frame *entity.CallFrame) []entit
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskProxyDelegation,
 				Severity: entity.SeverityWarning,
-				Message:  fmt.Sprintf("DELEGATECALL from %s to %s — storage manipulation risk", f.From, f.To),
-				Context:  map[string]interface{}{"from": f.From, "to": f.To},
+				Message:  fmt.Sprintf("DELEGATECALL from %s to %s  storage manipulation risk", f.From, f.To),
+				Context:  map[string]any{"from": f.From, "to": f.To},
 			})
 		}
 	})
@@ -137,8 +143,8 @@ func (a *DefaultRiskAnalyzer) checkReentrancy(frame *entity.CallFrame) []entity.
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskReentrancy,
 				Severity: entity.SeverityWarning,
-				Message:  fmt.Sprintf("Contract %s called %d times in one tx — possible reentrancy", addr, n),
-				Context:  map[string]interface{}{"contract": addr, "call_count": n},
+				Message:  fmt.Sprintf("Contract %s called %d times in one tx  possible reentrancy", addr, n),
+				Context:  map[string]any{"contract": addr, "call_count": n},
 			})
 		}
 	}
@@ -152,8 +158,8 @@ func (a *DefaultRiskAnalyzer) checkSelfdestruct(frame *entity.CallFrame) []entit
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskSelfDestruct,
 				Severity: entity.SeverityCritical,
-				Message:  fmt.Sprintf("Contract %s will SELFDESTRUCT — all stored ETH drained", f.From),
-				Context:  map[string]interface{}{"contract": f.From},
+				Message:  fmt.Sprintf("Contract %s will SELFDESTRUCT  all stored ETH drained", f.From),
+				Context:  map[string]any{"contract": f.From},
 			})
 		}
 	})
