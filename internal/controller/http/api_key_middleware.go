@@ -21,8 +21,8 @@ func APIKeyAuth(repo usecase.APIKeyRepository) gin.HandlerFunc {
 		if key == "" {
 			// Also accept "Authorization: Bearer <key>" for SDK convenience.
 			auth := c.GetHeader("Authorization")
-			if strings.HasPrefix(auth, "Bearer ") {
-				key = strings.TrimPrefix(auth, "Bearer ")
+			if v, ok := strings.CutPrefix(auth, "Bearer "); ok {
+				key = v
 			}
 		}
 
