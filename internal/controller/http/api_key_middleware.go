@@ -28,7 +28,7 @@ func APIKeyAuth(repo usecase.APIKeyRepository) gin.HandlerFunc {
 
 		if key == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
-				Error: "missing API key — provide X-API-Key header",
+				Error: "missing API key  provide X-API-Key header",
 				Code:  "MISSING_API_KEY",
 			})
 			return

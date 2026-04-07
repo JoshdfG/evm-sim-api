@@ -65,7 +65,7 @@ func (c *SimulationCacheRepo) Simulate(ctx context.Context, req entity.Simulatio
 
 	ttl := c.finalizedTTL
 	if req.BlockNumber == nil {
-		ttl = c.pendingTTL // pending block — short TTL
+		ttl = c.pendingTTL // pending block  short TTL
 	}
 
 	if blob, err := json.Marshal(result); err == nil {
@@ -89,7 +89,7 @@ func cacheKey(req entity.SimulationRequest) string {
 		Value       string
 		GasPrice    string
 		Data        string
-		Overrides   interface{}
+		Overrides   any
 	}
 
 	block := "latest"

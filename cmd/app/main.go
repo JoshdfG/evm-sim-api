@@ -2,7 +2,7 @@ package main
 
 // @title          EVM Transaction Simulation API
 // @version        1.0
-// @description    Simulate any EVM transaction before sending — token deltas, gas, revert reasons, risk flags.
+// @description    Simulate any EVM transaction before sending  token deltas, gas, revert reasons, risk flags.
 // @host           localhost:8081
 // @BasePath       /
 // @securityDefinitions.apikey ApiKeyAuth
@@ -49,7 +49,7 @@ func main() {
 		Str("pg_host", cfg.Postgres.Host).
 		Str("redis_addr", cfg.Redis.Addr()).
 		Str("archive_node", maskURL(cfg.EVM.ArchiveNodeURL)).
-		Msg("config loaded — if any field looks wrong, check .env against .env.example")
+		Msg("config loaded  if any field looks wrong, check .env against .env.example")
 
 	// ── Postgres ──────────────────────────────────────────────────────────────
 	pool, err := pgxpool.New(context.Background(), cfg.Postgres.DSN())
@@ -129,7 +129,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Info().Msg("shutdown signal received — draining connections")
+	log.Info().Msg("shutdown signal received draining connections")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

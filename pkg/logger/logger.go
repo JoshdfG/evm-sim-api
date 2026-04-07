@@ -14,7 +14,7 @@ import (
 //
 // In development (env == "development") it uses a coloured ConsoleWriter with
 // shortened caller paths and a human-readable time format.
-// In all other environments it emits structured JSON — ready for Datadog / Loki.
+// In all other environments it emits structured JSON  ready for Datadog / Loki.
 //
 // Every log line carries:
 //

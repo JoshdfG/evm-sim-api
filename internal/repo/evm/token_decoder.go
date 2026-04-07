@@ -22,7 +22,7 @@ const (
 	topicERC20Approval = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
 )
 
-// ERC20 function selectors — first 4 bytes of keccak256(signature).
+// ERC20 function selectors first 4 bytes of keccak256(signature).
 var (
 	selectorSymbol   = []byte{0x95, 0xd8, 0x9b, 0x41} // symbol()
 	selectorDecimals = []byte{0x31, 0x3c, 0xe5, 0x67} // decimals()
@@ -117,8 +117,8 @@ func (d *EVMTokenDecoder) Decode(
 				Type:         entity.AssetChangeERC20,
 				Address:      spender,
 				TokenAddress: l.Address,
-				RawAmount:    amount,
-				HumanAmount:  amount.String(),
+				RawAmount:    entity.NewBigIntString(amount),
+				HumanAmount:  entity.NormaliseHumanAmount(amount.String()), // Approval usually raw
 			})
 			d.log.Debug().Str("token", l.Address).Str("spender", spender).Str("amount", amount.String()).Msg("Approval decoded")
 		}
@@ -147,7 +147,7 @@ func (d *EVMTokenDecoder) Decode(
 			TokenAddress:  k.token,
 			TokenSymbol:   meta.symbol,
 			TokenDecimals: meta.decimals,
-			RawAmount:     delta,
+			RawAmount:     entity.NewBigIntString(delta),
 			HumanAmount:   formatAmount(delta, meta.decimals),
 		})
 	}
@@ -192,7 +192,7 @@ func extractNativeChanges(frame *entity.CallFrame) []entity.AssetChange {
 		changes = append(changes, entity.AssetChange{
 			Type:        entity.AssetChangeNative,
 			Address:     addr,
-			RawAmount:   delta,
+			RawAmount:   entity.NewBigIntString(delta),
 			HumanAmount: formatAmount(delta, 18),
 		})
 	}
@@ -200,7 +200,7 @@ func extractNativeChanges(frame *entity.CallFrame) []entity.AssetChange {
 }
 
 // lookupToken fetches symbol() and decimals() from the token contract via eth_call.
-// Results are cached in-process — no repeat RPC calls for the same token.
+// Results are cached in-process  no repeat RPC calls for the same token.
 func (d *EVMTokenDecoder) lookupToken(address string) *tokenMeta {
 	if m, ok := d.tokenCache[address]; ok {
 		return m

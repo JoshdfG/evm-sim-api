@@ -74,7 +74,7 @@ func (t *CallTracer) TraceCall(
 		blockRef = fmt.Sprintf("0x%x", blockNum)
 	}
 
-	// Use hex.EncodeToString for []byte — fmt.Sprintf("0x%x", slice) drops zero-padding.
+	// Use hex.EncodeToString for []byte fmt.Sprintf("0x%x", slice) drops zero-padding.
 	callArg := map[string]any{
 		"from": msg.From.Hex(),
 		"to":   msg.To.Hex(),
@@ -95,7 +95,7 @@ func (t *CallTracer) TraceCall(
 
 	var raw json.RawMessage
 	if err := client.Client().CallContext(ctx, &raw, "debug_traceCall", callArg, blockRef, tracerOpts); err != nil {
-		t.log.Warn().Err(err).Msg("debug_traceCall failed — call trace unavailable")
+		t.log.Warn().Err(err).Msg("debug_traceCall failed call trace unavailable")
 		return TraceResult{LogSource: "none"}
 	}
 
@@ -120,19 +120,19 @@ func (t *CallTracer) TraceCall(
 	}
 }
 
-// AlchemySimulate calls alchemy_simulateAssetChanges — available on all Alchemy plans.
+// AlchemySimulate calls alchemy_simulateAssetChanges  available on all Alchemy plans.
 // Returns structured asset changes directly from Alchemy's simulation engine.
 // This is used as a fallback when debug_traceCall returns no logs.
 func (t *CallTracer) AlchemySimulate(
 	ctx context.Context,
 	client *ethclient.Client,
 	msg ethereum.CallMsg,
-	_ *big.Int, // blockNum reserved — alchemy_simulateAssetChanges always simulates at latest
+	_ *big.Int, // blockNum reserved alchemy_simulateAssetChanges always simulates at latest
 ) ([]alchemyAssetChange, error) {
 	// Build the transaction object.
-	// IMPORTANT: use hex.EncodeToString for []byte fields — fmt.Sprintf("0x%x", slice)
+	// IMPORTANT: use hex.EncodeToString for []byte fields fmt.Sprintf("0x%x", slice)
 	// drops zero-padding (0x00 → "0" not "00") which corrupts calldata.
-	callArg := map[string]interface{}{
+	callArg := map[string]any{
 		"from": msg.From.Hex(),
 		"to":   msg.To.Hex(),
 	}
@@ -142,7 +142,7 @@ func (t *CallTracer) AlchemySimulate(
 	if msg.Value != nil && msg.Value.Sign() > 0 {
 		callArg["value"] = fmt.Sprintf("0x%x", msg.Value)
 	}
-	// Omit gas — letting Alchemy estimate avoids "invalid transaction object"
+	// Omit gas  letting Alchemy estimate avoids "invalid transaction object"
 	// errors caused by our default 30M gas cap looking like a malformed tx.
 
 	type alchemyResp struct {
@@ -153,7 +153,7 @@ func (t *CallTracer) AlchemySimulate(
 	}
 
 	var resp alchemyResp
-	// params must be [{txObject}] — single tx object, no block tag.
+	// params must be [{txObject}] single tx object, no block tag.
 	// CallContext variadic expansion: CallContext(ctx, result, method, arg) → params: [arg]
 	if err := client.Client().CallContext(ctx, &resp, "alchemy_simulateAssetChanges", callArg); err != nil {
 		return nil, fmt.Errorf("alchemy_simulateAssetChanges: %w", err)
