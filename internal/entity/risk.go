@@ -28,5 +28,5 @@ type RiskFlag struct {
 	Code     RiskCode               `json:"code"`
 	Severity RiskSeverity           `json:"severity"`
 	Message  string                 `json:"message"`
-	Context  map[string]interface{} `json:"context,omitempty"`
+	Context  map[string]any `json:"context,omitempty"`
 }

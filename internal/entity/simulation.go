@@ -46,10 +46,10 @@ type SimulationResult struct {
 
 // DecodedLog is a human-readable EVM event log.
 type DecodedLog struct {
-	Address  string                 `json:"address"`
-	EventSig string                 `json:"event_sig"`
-	Decoded  map[string]interface{} `json:"decoded"`
-	Raw      []string               `json:"raw_topics"`
+	Address  string         `json:"address"`
+	EventSig string         `json:"event_sig"`
+	Decoded  map[string]any `json:"decoded"`
+	Raw      []string       `json:"raw_topics"`
 }
 
 // CallFrame is one node in the EVM internal call tree.
