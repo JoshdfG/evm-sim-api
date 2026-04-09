@@ -46,13 +46,13 @@ func New(level, appName, version, env string) zerolog.Logger {
 		output = zerolog.ConsoleWriter{
 			Out:        os.Stdout,
 			TimeFormat: "15:04:05",
-			FormatLevel: func(i interface{}) string {
+			FormatLevel: func(i any) string {
 				return fmt.Sprintf("| %-5s|", i)
 			},
-			FormatMessage: func(i interface{}) string {
+			FormatMessage: func(i any) string {
 				return fmt.Sprintf("%s", i)
 			},
-			FormatCaller: func(i interface{}) string {
+			FormatCaller: func(i any) string {
 				return fmt.Sprintf("%s >", i)
 			},
 		}
