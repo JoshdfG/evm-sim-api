@@ -30,25 +30,6 @@ services:
       timeout: 3s
       retries: 5
 
-  # ── Optional: local Ethereum node ──────────────────────────────────────────
-  # For development, point EVM_ARCHIVE_NODE_URL at Alchemy/Infura instead.
-  # Uncomment below only if you want a fully local setup (~2 TB disk required).
-  #
-  # erigon:
-  #   image: thorax/erigon:latest
-  #   ports:
-  #     - "8545:8545"
-  #   volumes:
-  #     - erigondata:/home/erigon/.local/share/erigon
-  #   command: >
-  #     erigon
-  #     --chain=mainnet
-  #     --http
-  #     --http.addr=0.0.0.0
-  #     --http.api=eth,debug,net,trace
-  #     --prune=htc
-
 volumes:
   pgdata:
   redisdata:
-  # erigondata:
