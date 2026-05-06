@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joshdfg/evm-sim-api/internal/usecase"
@@ -29,6 +30,7 @@ func NewSimulationHandler(uc *usecase.SimulationUseCase) *SimulationHandler {
 // @Failure      400             {object}         ErrorResponse
 // @Failure      401             {object}         ErrorResponse
 // @Failure      422             {object}         ErrorResponse
+// @Failure      429             {object}         ErrorResponse
 // @Failure      500             {object}         ErrorResponse
 // @Router       /v1/simulate [post]
 func (h *SimulationHandler) Simulate(c *gin.Context) {
@@ -64,7 +66,6 @@ func (h *SimulationHandler) Simulate(c *gin.Context) {
 		return
 	}
 
-	// Strip verbose call trace unless caller explicitly requested it.
 	if !req.IncludeCallTrace {
 		result.CallTrace = nil
 	}
@@ -73,7 +74,7 @@ func (h *SimulationHandler) Simulate(c *gin.Context) {
 }
 
 // GetSimulation godoc
-// @Summary      Retrieve a simulation result
+// @Summary      Retrieve a simulation result by ID
 // @Description  Fetches a previously run simulation result from history by its UUID.
 // @Tags         simulation
 // @Produce      json
@@ -104,4 +105,62 @@ func (h *SimulationHandler) GetSimulation(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, SimulateResponse{SimulationResult: *result})
+}
+
+// ListSimulations godoc
+// @Summary      List simulation history
+// @Description  Returns a paginated list of simulations run by the authenticated API key.
+// @Tags         simulation
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        limit   query  int  false  "Max results to return (default 20, max 100)"
+// @Param        offset  query  int  false  "Pagination offset (default 0)"
+// @Success      200  {object}  ListSimulationsResponse
+// @Failure      401  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Router       /v1/simulations [get]
+func (h *SimulationHandler) ListSimulations(c *gin.Context) {
+	info := APIKeyFromContext(c)
+	if info == nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "missing API key context"})
+		return
+	}
+
+	limit := clampInt(c.Query("limit"), 20, 1, 100)
+	offset := clampInt(c.Query("offset"), 0, 0, 1<<31)
+
+	results, err := h.uc.List(c.Request.Context(), info.OwnerID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "failed to list simulations",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, ListSimulationsResponse{
+		Results: results,
+		Limit:   limit,
+		Offset:  offset,
+		Count:   len(results),
+	})
+}
+
+// clampInt parses s as an integer, returns defaultVal if empty/invalid,
+// and clamps the result to [min, max].
+func clampInt(s string, defaultVal, min, max int) int {
+	if s == "" {
+		return defaultVal
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return defaultVal
+	}
+	if n < min {
+		return min
+	}
+	if n > max {
+		return max
+	}
+	return n
 }

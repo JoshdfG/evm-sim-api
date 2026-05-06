@@ -26,6 +26,7 @@ func NewRiskAnalyzer() *DefaultRiskAnalyzer {
 }
 
 // Analyze runs all risk rules and returns the combined flag set.
+// Works on both the log-decoded path (debug_traceCall) and the Alchemy path.
 func (a *DefaultRiskAnalyzer) Analyze(
 	req entity.SimulationRequest,
 	raw RawSimResult,
@@ -34,6 +35,7 @@ func (a *DefaultRiskAnalyzer) Analyze(
 	var flags []entity.RiskFlag
 	flags = append(flags, a.checkUnlimitedApprovals(changes)...)
 	flags = append(flags, a.checkNFTApprovals(raw.Logs)...)
+	flags = append(flags, a.checkAlchemyApprovals(raw.AlchemyChanges)...)
 	flags = append(flags, a.checkHighNativeTransfer(req, changes)...)
 	flags = append(flags, a.checkDelegatecall(raw.CallTrace)...)
 	flags = append(flags, a.checkReentrancy(raw.CallTrace)...)
@@ -41,15 +43,13 @@ func (a *DefaultRiskAnalyzer) Analyze(
 	return flags
 }
 
+// checkUnlimitedApprovals detects MAX_UINT256 ERC20 approvals from the log-decoded path.
 func (a *DefaultRiskAnalyzer) checkUnlimitedApprovals(changes []entity.AssetChange) []entity.RiskFlag {
 	var flags []entity.RiskFlag
 	for _, c := range changes {
 		if c.Type != entity.AssetChangeERC20 {
 			continue
 		}
-
-		// 1. Structs aren't nil.
-		// 2. Use .Int to access big.Int methods.
 		if c.RawAmount.Int != nil && c.RawAmount.Cmp(maxUint256) == 0 {
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskUnlimitedApproval,
@@ -66,9 +66,58 @@ func (a *DefaultRiskAnalyzer) checkUnlimitedApprovals(changes []entity.AssetChan
 	return flags
 }
 
-// checkNFTApprovals detects setApprovalForAll by its event topic.
-// keccak256("ApprovalForAll(address,address,bool)")
+// checkAlchemyApprovals inspects the Alchemy-provided change list for APPROVE entries.
+// This fires when debug_traceCall is unavailable (free tier) and Alchemy provides
+// pre-parsed changes that include changeType: "APPROVE" with the approved amount.
+func (a *DefaultRiskAnalyzer) checkAlchemyApprovals(alchemyChanges []entity.AssetChange) []entity.RiskFlag {
+	var flags []entity.RiskFlag
+	for _, c := range alchemyChanges {
+		if c.Type != entity.AssetChangeERC20 {
+			continue
+		}
+		if c.RawAmount.Int == nil {
+			continue
+		}
+		// Alchemy marks approvals as positive amounts to the spender.
+		// MAX_UINT256 = unlimited approval.
+		if c.RawAmount.Cmp(maxUint256) == 0 {
+			flags = append(flags, entity.RiskFlag{
+				Code:     entity.RiskUnlimitedApproval,
+				Severity: entity.SeverityCritical,
+				Message:  fmt.Sprintf("Unlimited ERC20 approval granted to %s for token %s", c.Address, c.TokenAddress),
+				Context: map[string]any{
+					"spender":       c.Address,
+					"token_address": c.TokenAddress,
+					"token_symbol":  c.TokenSymbol,
+				},
+			})
+			continue
+		}
+		// Flag any large approval (>= 1M tokens with 6 decimals, or > 1000 with 18).
+		// Threshold: 1_000_000 in base units with the token's own decimals.
+		if c.TokenDecimals > 0 {
+			threshold := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(c.TokenDecimals)+6), nil)
+			if c.RawAmount.Cmp(threshold) >= 0 {
+				flags = append(flags, entity.RiskFlag{
+					Code:     entity.RiskUnlimitedApproval,
+					Severity: entity.SeverityWarning,
+					Message:  fmt.Sprintf("Large ERC20 approval of %s %s granted to %s", c.HumanAmount, c.TokenSymbol, c.Address),
+					Context: map[string]any{
+						"spender":       c.Address,
+						"amount_human":  c.HumanAmount,
+						"token_address": c.TokenAddress,
+						"token_symbol":  c.TokenSymbol,
+					},
+				})
+			}
+		}
+	}
+	return flags
+}
+
+// checkNFTApprovals detects setApprovalForAll by its event topic (log-decoded path).
 func (a *DefaultRiskAnalyzer) checkNFTApprovals(logs []RawLog) []entity.RiskFlag {
+	// keccak256("ApprovalForAll(address,address,bool)")
 	const topic = "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
 	var flags []entity.RiskFlag
 	for _, l := range logs {
@@ -77,7 +126,7 @@ func (a *DefaultRiskAnalyzer) checkNFTApprovals(logs []RawLog) []entity.RiskFlag
 				flags = append(flags, entity.RiskFlag{
 					Code:     entity.RiskSetApprovalForAll,
 					Severity: entity.SeverityCritical,
-					Message:  fmt.Sprintf("setApprovalForAll detected on %s  grants operator full NFT control", l.Address),
+					Message:  fmt.Sprintf("setApprovalForAll detected on %s — grants operator full NFT control", l.Address),
 					Context:  map[string]any{"contract": l.Address},
 				})
 			}
@@ -98,18 +147,15 @@ func (a *DefaultRiskAnalyzer) checkHighNativeTransfer(
 		if !strings.EqualFold(c.Address, req.From) {
 			continue
 		}
-		// c.RawAmount is a struct, so check the internal pointer
 		if c.RawAmount.Int == nil {
 			continue
 		}
-
-		// Access the underlying *big.Int using .Int
 		abs := new(big.Int).Abs(c.RawAmount.Int)
 		if abs.Cmp(a.highNativeThresholdWei) >= 0 {
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskHighNativeTransfer,
 				Severity: entity.SeverityWarning,
-				Message:  fmt.Sprintf("Transaction sends %s native tokens  verify recipient carefully", c.HumanAmount),
+				Message:  fmt.Sprintf("Transaction sends %s native tokens — verify recipient carefully", c.HumanAmount),
 				Context:  map[string]any{"amount_human": c.HumanAmount, "to": req.To},
 			})
 		}
@@ -124,7 +170,7 @@ func (a *DefaultRiskAnalyzer) checkDelegatecall(frame *entity.CallFrame) []entit
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskProxyDelegation,
 				Severity: entity.SeverityWarning,
-				Message:  fmt.Sprintf("DELEGATECALL from %s to %s  storage manipulation risk", f.From, f.To),
+				Message:  fmt.Sprintf("DELEGATECALL from %s to %s — storage manipulation risk", f.From, f.To),
 				Context:  map[string]any{"from": f.From, "to": f.To},
 			})
 		}
@@ -143,7 +189,7 @@ func (a *DefaultRiskAnalyzer) checkReentrancy(frame *entity.CallFrame) []entity.
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskReentrancy,
 				Severity: entity.SeverityWarning,
-				Message:  fmt.Sprintf("Contract %s called %d times in one tx  possible reentrancy", addr, n),
+				Message:  fmt.Sprintf("Contract %s called %d times in one tx — possible reentrancy", addr, n),
 				Context:  map[string]any{"contract": addr, "call_count": n},
 			})
 		}
@@ -158,7 +204,7 @@ func (a *DefaultRiskAnalyzer) checkSelfdestruct(frame *entity.CallFrame) []entit
 			flags = append(flags, entity.RiskFlag{
 				Code:     entity.RiskSelfDestruct,
 				Severity: entity.SeverityCritical,
-				Message:  fmt.Sprintf("Contract %s will SELFDESTRUCT  all stored ETH drained", f.From),
+				Message:  fmt.Sprintf("Contract %s will SELFDESTRUCT — all stored ETH drained", f.From),
 				Context:  map[string]any{"contract": f.From},
 			})
 		}
@@ -166,7 +212,6 @@ func (a *DefaultRiskAnalyzer) checkSelfdestruct(frame *entity.CallFrame) []entit
 	return flags
 }
 
-// walkFrames depth-first traverses the call tree, calling fn on every frame.
 func walkFrames(frame *entity.CallFrame, fn func(*entity.CallFrame)) {
 	if frame == nil {
 		return
@@ -177,5 +222,4 @@ func walkFrames(frame *entity.CallFrame, fn func(*entity.CallFrame)) {
 	}
 }
 
-// Compile-time interface check.
 var _ RiskAnalyzer = (*DefaultRiskAnalyzer)(nil)
