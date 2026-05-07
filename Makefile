@@ -2,7 +2,7 @@ APP_NAME  := evm-sim-api
 MAIN      := ./cmd/app
 BUILD_DIR := ./bin
 
-.PHONY: run build test test-all lint swag sqlc migrate seed infra infra-down tidy help
+.PHONY: run build test test-all lint swag swag-docs sqlc migrate seed infra infra-down tidy help
 
 ## run: start the API server (reads .env automatically)
 run:
@@ -28,6 +28,10 @@ lint:
 swag:
 	swag init -g cmd/app/main.go --output docs
 
+## swag-docs: alias for swag
+swag-docs: 
+	swag
+
 ## sqlc: regenerate type-safe DB queries from internal/repo/sqlc/query.sql
 sqlc:
 	sqlc generate
@@ -40,6 +44,10 @@ tidy:
 ## infra: start Postgres + Redis via Docker Compose
 infra:
 	docker compose up -d postgres redis
+
+## infra-restart: restart infra without losing data
+infra-restart:
+	docker compose restart postgres redis
 
 ## infra-down: stop and remove containers + volumes
 infra-down:
@@ -64,8 +72,8 @@ seed:
 help:
 	@grep -E '^##' Makefile | sed 's/## /  /'
 
-swag-docs:
-	curl -X POST http://localhost:8081/v1/simulate \
-  -H "X-API-Key: dev-test-key-00000000" \
-  -H "Content-Type: application/json" \
-  -d '{"chain_id":1,"from":"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045","to":"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48","data":"0x70a08231000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045"}'
+# swag-docs:
+# 	curl -X POST http://localhost:8081/v1/simulate \
+#   -H "X-API-Key: dev-test-key-00000000" \
+#   -H "Content-Type: application/json" \
+#   -d '{"chain_id":1,"from":"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045","to":"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48","data":"0x70a08231000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045"}'

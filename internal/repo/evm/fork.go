@@ -19,11 +19,11 @@ import (
 // ArchiveNodeFork implements usecase.EVMFork.
 //
 // Log collection strategy (in priority order):
-//  1. debug_traceCall with callTracer+withLog  full call tree and logs.
+//  1. debug_traceCall with callTracer+withLog full call tree and logs.
 //     Available on Alchemy Growth+, QuickNode, Infura paid, self-hosted geth.
-//  2. alchemy_simulateAssetChanges  structured asset changes from Alchemy.
+//  2. alchemy_simulateAssetChanges structured asset changes from Alchemy.
 //     Available on ALL Alchemy plans including free tier.
-//  3. eth_getLogs fallback  reads actual on-chain logs for the block/address.
+//  3. eth_getLogs fallback reads actual on-chain logs for the block/address.
 //     Only useful when blockNumber is specified (historical simulation).
 type ArchiveNodeFork struct {
 	client  *ethclient.Client
@@ -198,7 +198,7 @@ func convertAlchemyChanges(in []alchemyAssetChange) []entity.AssetChange {
 				TokenSymbol:  c.Symbol,
 				TokenID:      &entity.BigIntString{Int: tokenID},
 				RawAmount:    entity.BigIntString{Int: big.NewInt(1)},
-				HumanAmount:  "1.0", // Hardcoded normalized string
+				HumanAmount:  "1.0",
 			})
 		}
 	}

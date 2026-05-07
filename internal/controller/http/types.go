@@ -105,3 +105,11 @@ func (r SimulateRequest) toEntityRequest() (entity.SimulationRequest, error) {
 
 	return req, nil
 }
+
+// ListSimulationsResponse is the paginated response for GET /v1/simulations.
+type ListSimulationsResponse struct {
+	Results []entity.SimulationResult `json:"results"`
+	Count   int                       `json:"count"`
+	Limit   int                       `json:"limit"`
+	Offset  int                       `json:"offset"`
+}
