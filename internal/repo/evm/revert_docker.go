@@ -25,7 +25,7 @@ var knownSelectors = map[string]string{
 	"f645eedf": "PriceLimitAlreadyExceeded()",
 	"68efce1b": "PriceLimitOutOfBounds(uint160,uint160)",
 	"bd5e88c4": "InsufficientInputAmount()",
-	"45b96fe0": "LOK()", // reentrancy lock
+	"45b96fe0": "LOK()",
 	"0a431745": "NotInitialized()",
 
 	// ── AAVE V3 ──────────────────────────────────────────────────────────────
